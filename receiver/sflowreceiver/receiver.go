@@ -1,7 +1,11 @@
-package sflowreceiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package sflowreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -23,7 +27,7 @@ type sflowreceiverlogs struct {
 	connection     *net.UDPConn
 }
 
-func (s *sflowreceiverlogs) Start(ctx context.Context, host component.Host) error {
+func (s *sflowreceiverlogs) Start(ctx context.Context, _ component.Host) error {
 	logger := s.createSettings.Logger
 	translate := Translator{Logger: logger}
 
@@ -71,7 +75,7 @@ func (s *sflowreceiverlogs) Start(ctx context.Context, host component.Host) erro
 					if err != nil {
 						if strings.Contains(err.Error(), "use of closed network connection") {
 							return
-						} else if err == io.EOF { // io.EOF is returned when the connection is closed.
+						} else if errors.Is(err, io.EOF) { // io.EOF is returned when the connection is closed.
 							return
 						}
 						logger.Error("Error reading UDP packet:", zap.Error(err))
@@ -93,23 +97,28 @@ func (s *sflowreceiverlogs) Start(ctx context.Context, host component.Host) erro
 		for {
 			select {
 			case u := <-udpDataCh:
-				sflowData := DecodeSFlowPacket(u.payload)
+				sflowData := decodeSFlowPacket(u.payload)
 				plogs := translate.SflowToOtelLogs(sflowData, s.config)
 				if plogs.LogRecordCount() > 0 {
-					s.nextConsumer.ConsumeLogs(ctx, plogs)
+					err := s.nextConsumer.ConsumeLogs(ctx, plogs)
+					if err != nil {
+						logger.Error("Error consuming logs:", zap.Error(err))
+					}
 				}
 			case <-ctx.Done():
 				return
 			}
 		}
 	}()
-
 	return nil
 }
 
-func (s *sflowreceiverlogs) Shutdown(ctx context.Context) error {
+func (s *sflowreceiverlogs) Shutdown(_ context.Context) error {
 	logger := s.createSettings.Logger
-	s.cancel()
+	logger.Info("Shutting down consumer")
+	if s.cancel != nil {
+		s.cancel()
+	}
 	if s.connection != nil {
 		err := s.connection.Close()
 		if err != nil {

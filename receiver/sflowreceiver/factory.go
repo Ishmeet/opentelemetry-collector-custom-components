@@ -1,4 +1,7 @@
-package sflowreceiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package sflowreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver"
 
 import (
 	"context"
@@ -7,11 +10,13 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/Ishmeet/opentelemetry-collector-custom-components/receiver/sflowreceiver/internal/metadata"
 )
 
 const (
-	stability = component.StabilityLevelAlpha
-	typeStr   = "sflow"
+	stability = metadata.LogsStability
+	typeStr   = metadata.Type
 )
 
 func createDefaultConfig() component.Config {
@@ -31,7 +36,7 @@ func NewFactory() receiver.Factory {
 	)
 }
 
-func createLogsReceiver(ctx context.Context, params receiver.CreateSettings, basecfg component.Config, nextConsumer consumer.Logs) (receiver.Logs, error) {
+func createLogsReceiver(_ context.Context, params receiver.CreateSettings, basecfg component.Config, nextConsumer consumer.Logs) (receiver.Logs, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}

@@ -1,4 +1,7 @@
-package sflowreceiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package sflowreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver"
 
 import (
 	"go.opentelemetry.io/collector/config/confignet"

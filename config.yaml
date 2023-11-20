@@ -1,0 +1,18 @@
+receivers:
+  sflow:
+    endpoint: 0.0.0.0:9995
+    labels:
+      mylabel1: value1
+      mylabel2: value2
+
+exporters:
+  logging:
+    verbosity: detailed
+
+service:
+  pipelines:
+    logs:
+      receivers:
+        - sflow
+      exporters:
+        - logging
